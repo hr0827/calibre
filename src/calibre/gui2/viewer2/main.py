@@ -8,6 +8,7 @@ from __future__ import absolute_import, division, print_function, unicode_litera
 
 import os
 import sys
+from functools import partial
 from threading import Thread
 
 from PyQt5.Qt import QIcon, QObject, Qt, QTimer, pyqtSignal
@@ -158,10 +159,12 @@ def main(args=sys.argv):
     app.setWindowIcon(QIcon(I('viewer.png')))
     main = EbookViewer()
     main.set_exception_handler()
-    if args:
-        acc.events.append(args[-1])
     acc.got_file.connect(main.handle_commandline_arg)
     main.show()
+    if args:
+        # give WebEngine time to settle before loading the book, avoids
+        # lots of crashes on startup
+        QTimer.singleShot(0, partial(main.handle_commandline_arg, args[-1]))
     main.msg_from_anotherinstance.connect(main.another_instance_wants_to_talk, type=Qt.QueuedConnection)
     if listener is not None:
         t = Thread(name='ConnListener', target=listen, args=(listener, main.msg_from_anotherinstance))
